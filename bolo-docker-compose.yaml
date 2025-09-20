@@ -12,7 +12,7 @@ services:
       JDBC_PASSWORD: 123456
       JDBC_DRIVER: com.mysql.cj.jdbc.Driver
       JDBC_URL: jdbc:mysql://db_mysql:3306/solo?useUnicode=yes&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    command: --server_host=zotg11382540.vicp.fun --listen_port=18080 --server_port=80 --server_scheme=http
+    command: --server_host=zotg1140.vicp.fun --listen_port=18080 --server_port=80 --server_scheme=http
     depends_on:
       - db_mysql
   
@@ -25,5 +25,5 @@ services:
     ports:
       - '3306:3306'
     volumes:
-      - /tmp/zfsv3/sata1/15830905928/data/docker/apps/bolo-solo/scripts:/docker-entrypoint-initdb.d
+      - /tmp/zfsv3/sata1/data/docker/apps/bolo-solo/scripts:/docker-entrypoint-initdb.d
     command: --bind-address=0.0.0.0
