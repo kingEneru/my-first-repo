@@ -1,0 +1,29 @@
+version: '2'
+services:
+  bolo:
+    image: tangcuyu/bolo-solo:latest
+    restart: always
+    container_name: bolo
+    ports:
+      - '18080:18080'
+    environment:
+      RUNTIME_DB: MYSQL
+      JDBC_USERNAME: root
+      JDBC_PASSWORD: 123456
+      JDBC_DRIVER: com.mysql.cj.jdbc.Driver
+      JDBC_URL: jdbc:mysql://db_mysql:3306/solo?useUnicode=yes&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    command: --server_host=zotg11382540.vicp.fun --listen_port=18080 --server_port=80 --server_scheme=http
+    depends_on:
+      - db_mysql
+  
+  db_mysql:
+    image: mysql:8.0
+    restart: always
+    container_name: db_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - '3306:3306'
+    volumes:
+      - /tmp/zfsv3/sata1/15830905928/data/docker/apps/bolo-solo/scripts:/docker-entrypoint-initdb.d
+    command: --bind-address=0.0.0.0
