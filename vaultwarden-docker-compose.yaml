@@ -1,0 +1,17 @@
+# Suggestion: Memory Requests: 128MB & Memory Limit: 256MB
+version: "3.5"
+services:
+  vaultwarden:
+    image: vaultwarden/server:testing
+    container_name: vaultwarden
+    volumes:
+      - /apps/vaultwardenServer:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+      - WEBSOCKET_ENABLED=true
+    ports:
+      - 9900:80
+    network_mode: bridge
+    restart: unless-stopped
