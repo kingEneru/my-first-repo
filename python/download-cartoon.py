@@ -1,15 +1,20 @@
 import os
 import re
 import json
-import sqlite3
+import sys
+
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+from supabase import create_client, Client
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
 }
-message_token = os.environ.get("MESSAGE_TOKEN")
+
+MESSAGE_TOKEN = os.environ.get("MESSAGE_TOKEN", '')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://myapp.supabase.co')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'anno_key') # anno key
 
 def get_WanMei_Link(result):
     print('正在获取完美世界 最新集下载链接..')
@@ -200,45 +205,12 @@ def get_TunShi_Link(result):
         # print(f'检测到吞噬星空 最新集: {latest_1080p[0]}\n磁力链接获取成功:\n{latest_1080p[1]}')
     return result
 
-def operate_database(sql):
-    conn = sqlite3.connect('download-recording.db')
-    cursor = conn.cursor()
-
-    # 使用 CREATE TABLE IF NOT EXISTS 避免重复创建表的错误
-    create_table_sql = [
-        """
-        CREATE TABLE IF NOT EXISTS download_records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, -- 设置 id 自动递增
-            name TEXT,
-            magnet TEXT,
-            jishu INTEGER
-        );
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS wechat_notification_records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, -- 设置 id 自动递增
-            date TEXT,
-            time TEXT,
-            content TEXT
-        );
-        """
-    ]
-    # 创建动漫下载记录表、微信通知发送记录表
-    [cursor.execute(sql) for sql in create_table_sql]
-
-    cursor.execute(sql)
-    # 提交事务
-    conn.commit()
-    rows = cursor.fetchall()
-
-    conn.close()
-    return rows
 
 def send_wechat_notification(message_title, content):
-    if not message_token:
+    if not MESSAGE_TOKEN:
         print('ERROR! 没有获取到message token!')
     payload = {
-        "token": message_token,
+        "token": MESSAGE_TOKEN,
         "title": message_title,
         "content": content,
         # "topic": "code", 消息将会发送给加入群组编码为code的成员
@@ -251,6 +223,86 @@ def send_wechat_notification(message_title, content):
     print(res.status_code)
     print(res.text)
 
+class NotificationDB:
+    def __init__(self):
+        self.supabase: Client = create_client(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        )
+        # table = 'wechat_notification_records' or 'download_records'
+    # ----------------------------------
+    # 下载动漫处理逻辑
+    def process_cartoon(self, title:str , magnet:str, jishu: int, message_title:str, content: str):
+        if not self.has_already_downloaded(jishu):
+            print(f'检测到{title} 最新集: {jishu}\n磁力链接获取成功:\n{magnet}')
+            self.download_recording(title, magnet, jishu)
+            send_wechat_notification(message_title, content)
+            print(f"✅ 已发送通知: {content}")
+            sys.exit() # 处理完毕，直接退出
+        else:
+            print(f"⏭️ {title}, 第{jishu}集已经下载过了, 继续检测最新链接, 本次跳过。")
+            return False
+
+    def has_already_downloaded(self, jishu: int) -> bool:
+        """检查这一集是否已下载过"""
+        result = self.supabase.table('download_records') \
+            .select("*") \
+            .eq('jishu', jishu) \
+            .execute()
+        return len(result.data) > 0
+
+    def download_recording(self, title: str, magnet: str, jishu: int):
+        data = {
+            'name': title,
+            'magnet': magnet,
+            'jishu': jishu
+        }
+        result = self.supabase.table('download_records').insert(data).execute()
+        print('下载记录已经写入DB, 成功!')
+        return result.data
+
+    # end
+    # -----------------------------------
+    def has_notification_today(self, date_str: str) -> bool:
+        """检查今天是否已发送通知"""
+        result = self.supabase.table('wechat_notification_records') \
+            .select("*") \
+            .eq('date', date_str) \
+            .execute()
+        return len(result.data) > 0
+
+    def add_notification(self, date_str: str, time_str: str, content: str):
+        """添加通知记录"""
+        data = {
+            'date': date_str,
+            'time': time_str,
+            'content': content
+        }
+        result = self.supabase.table('wechat_notification_records').insert(data).execute()
+        return result.data
+
+    def delete_notification(self, date_str: str):
+        """删除通知记录"""
+        result = self.supabase.table('wechat_notification_records') \
+            .delete() \
+            .eq('date', date_str) \
+            .execute()
+        return result.data
+
+    def process_notification(self, current_date_str: str, current_time_str: str, content: str = '淘宝下单纸巾'):
+        """处理通知逻辑"""
+        if not self.has_notification_today(current_date_str):
+            self.add_notification(current_date_str, current_time_str, content)
+            send_wechat_notification(message_title='淘宝下单纸巾',content='第一单20-23点，第二单任意时间，第三单11点之前')
+            print(f"✅ 已发送通知: {content}")
+            # 如果确实需要立即删除，取消下面的注释
+            # self.delete_notification(current_date_str)
+            # print("📝 已删除通知记录")
+            return True
+        else:
+            print(f"⏭️ 今天已发送过下单通知，跳过")
+            return False
+
 if __name__ == '__main__':
     res = {
         'cartoon_name': '',
@@ -261,6 +313,8 @@ if __name__ == '__main__':
             }
         ]
     }
+    db = NotificationDB()
+
     utc_now = datetime.utcnow()
     beijing_time = utc_now + timedelta(hours=8)
 
@@ -268,10 +322,8 @@ if __name__ == '__main__':
     current_date_str = beijing_time.strftime("%Y-%m-%d")
     current_time_str = beijing_time.strftime("%H:%M:%S")
     if current_time_str > '20:01:00':
-        if not operate_database(f"select * from wechat_notification_records where date='{current_date_str}'"):
-            operate_database(f"INSERT INTO wechat_notification_records (date, time, content) VALUES ('{current_date_str}', '{current_time_str}', '淘宝下单纸巾');")
-            send_wechat_notification(message_title='淘宝下单纸巾', content='第一单20-23点，第二单任意时间，第三单11点之前')
-            operate_database(f"delete from wechat_notification_records where date='{current_date_str}'")
+        db.process_notification(current_date_str, current_time_str, '淘宝下单纸巾')
+
     if today + 1 == 2 and current_time_str >= '10:30:00':
         # 吞噬星空每周二更新, 10点
         get_TunShi_Link(res)
@@ -286,6 +338,7 @@ if __name__ == '__main__':
         get_DouPo_Link(res)
     else:
         print(f'当前时间: {datetime.now().strftime("%Y-%m-%d")} [星期{today+1}] {current_time_str}. `吞噬星空, 完美世界, 斗罗大陆, 斗破苍穹` 暂时都没有更新.')
+
     cartoon_name = res['cartoon_name']
     for resource in res['resources']:
         if resource['title']:
@@ -313,14 +366,4 @@ if __name__ == '__main__':
               </div>
             </div>
                 """
-            sql = f"select * from download_records where jishu={jishu}"
-            if operate_database(sql):
-                print(f"\t{title}, 第{jishu}集已经下载过了, 继续检测最新链接, 本次跳过..")
-            else:
-                print(f'检测到{title} 最新集: {jishu}\n磁力链接获取成功:\n{magnet}')
-                sql = f"INSERT INTO download_records (name, magnet, jishu) VALUES ('{title}', '{magnet}', {jishu});"
-                operate_database(sql)
-                operate_database(f"INSERT INTO wechat_notification_records (date, time, content) VALUES ('{current_date_str}', '{current_time_str}', '{cartoon_name}（已更新）');")
-                send_wechat_notification(message_title=cartoon_name + '（已更新）', content=template)
-                print('记录已经写入DB, 成功!')
-                break
+            db.process_cartoon(title, magnet, jishu, cartoon_name + '（已更新）', template)

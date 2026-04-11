@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install requests bs4
+      - run: pip install requests bs4 supabase
 
       - name: Send notification
         env:
