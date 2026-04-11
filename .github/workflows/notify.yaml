@@ -24,4 +24,6 @@ jobs:
       - name: Send notification
         env:
           MESSAGE_TOKEN: ${{ secrets.MESSAGE_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python python/download-cartoon.py
