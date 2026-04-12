@@ -223,7 +223,7 @@ def send_wechat_notification(message_title, content):
     if res.status_code == 200 and res.json().get('code', 0) == 200:
         print("✅ 已发送微信通知")
     else:
-        print(f'❌ 微信通知发送失败: {res.json()}')
+        print(f'❌ 微信通知发送失败: {res.text}')
 
 class NotificationDB:
     def __init__(self):
