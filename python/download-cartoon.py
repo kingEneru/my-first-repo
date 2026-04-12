@@ -220,8 +220,10 @@ def send_wechat_notification(message_title, content):
        'Content-Type': 'application/json'
     }
     res = requests.post("https://www.pushplus.plus/send", data=json.dumps(payload), headers=headers)
-    print(res.status_code)
-    print(res.text)
+    if res.status_code == 200 and res.json().get('code', 0) == 200:
+        print("✅ 已发送微信通知")
+    else:
+        print(f'❌ 微信通知发送失败: {res.text}')
 
 class NotificationDB:
     def __init__(self):
@@ -237,7 +239,6 @@ class NotificationDB:
             print(f'检测到{title} 最新集: {jishu}\n磁力链接获取成功:\n{magnet}')
             self.download_recording(title, magnet, jishu)
             send_wechat_notification(message_title, content)
-            print(f"✅ 已发送通知: {content}")
             sys.exit() # 处理完毕，直接退出
         else:
             print(f"⏭️ {title}, 第{jishu}集已经下载过了, 继续检测最新链接, 本次跳过。")
