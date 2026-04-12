@@ -15,6 +15,7 @@ headers = {
 MESSAGE_TOKEN = os.environ.get("MESSAGE_TOKEN", '')
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://myapp.supabase.co')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY', 'anno_key') # anno key
+FRIENDS_TOKEN = os.environ.get('FRIENDS_TOKEN', '') # 如果需要发给多个人,用逗号分隔.
 
 def get_WanMei_Link(result):
     print('正在获取完美世界 最新集下载链接..')
@@ -206,20 +207,21 @@ def get_TunShi_Link(result):
     return result
 
 
-def send_wechat_notification(message_title, content):
+def send_wechat_notification(message_title, content, to: str = ''):
     if not MESSAGE_TOKEN:
         print('ERROR! 没有获取到message token!')
     payload = {
+        "to": to, # 需要填写好友令牌，不填 则发给自己
         "token": MESSAGE_TOKEN,
         "title": message_title,
         "content": content,
-        # "topic": "code", 消息将会发送给加入群组编码为code的成员
-        "template": "html"
+        "template": "html",
+        "channel": "wechat",
     }
     headers = {
        'Content-Type': 'application/json'
     }
-    res = requests.post("https://www.pushplus.plus/send", data=json.dumps(payload), headers=headers)
+    res = requests.post("https://www.pushplus.plus/api/send", data=json.dumps(payload), headers=headers)
     if res.status_code == 200 and res.json().get('code', 0) == 200:
         print("✅ 已发送微信通知")
     else:
@@ -239,7 +241,11 @@ class NotificationDB:
             print(f'检测到{title} 最新集: {jishu}\n磁力链接获取成功:\n{magnet}')
             self.download_recording(title, magnet, jishu)
             send_wechat_notification(message_title, content)
-            sys.exit() # 处理完毕，直接退出
+            # 检测是否需要同时给好友发送通知
+            if FRIENDS_TOKEN:
+                friends_token_list = FRIENDS_TOKEN.strip().split(',')
+                [send_wechat_notification(message_title, content='刚刚获取到下载链接，请等待下载后再观看', to=token) for token in friends_token_list]
+            sys.exit() # 处理完毕，直接退出循环
         else:
             print(f"⏭️ {title}, 第{jishu}集已经下载过了, 继续检测最新链接, 本次跳过。")
             return False
@@ -367,4 +373,4 @@ if __name__ == '__main__':
               </div>
             </div>
                 """
-            db.process_cartoon(title, magnet, jishu, cartoon_name + '（已更新）', template)
+            db.process_cartoon(title, magnet, jishu, cartoon_name + f' 第{jishu}集（已更新）', template)

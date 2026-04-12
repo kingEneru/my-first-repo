@@ -36,4 +36,5 @@ jobs:
           MESSAGE_TOKEN: ${{ secrets.MESSAGE_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          FRIENDS_TOKEN: ${{ secrets.FRIENDS_TOKEN }}
         run: python python/download-cartoon.py
