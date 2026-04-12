@@ -360,7 +360,7 @@ if __name__ == '__main__':
                 <div style="max-width:320px;background:#fff;border-radius:16px;padding:16px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                 <span style="font-weight:700;font-size:16px;">🎬 {cartoon_name}</span>
-                <span style="background:#f5b042;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">第148集</span>
+                <span style="background:#f5b042;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">第{jishu}集</span>
               </div>
               <div style="background:#f5f7fa;border-radius:12px;padding:10px;margin-bottom:12px;font-size:12px;color:#666;">
                 📺 {title}
