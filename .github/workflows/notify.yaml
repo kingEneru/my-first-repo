@@ -4,7 +4,7 @@ on:
   schedule:
     # 每小时执行一次
     # GitHub 用 UTC 时区，比北京时间晚8个小时
-    - cron: '0 04 * * 2,5,6,0'
+    - cron: '31 04 * * 2,5,6,0'
 
   # 允许手动运行（方便测试）
   workflow_dispatch:
