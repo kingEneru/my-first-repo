@@ -86,4 +86,5 @@ if __name__ == '__main__':
     current_date_str = beijing_time.strftime("%Y-%m-%d")
     current_time_str = beijing_time.strftime("%H:%M:%S")
 
-    db.process_notification(current_date_str, current_time_str, '淘宝下单纸巾')
+    if current_time_str > '20:01:00':
+        db.process_notification(current_date_str, current_time_str, '淘宝下单纸巾')
