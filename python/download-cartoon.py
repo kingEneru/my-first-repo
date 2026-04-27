@@ -300,6 +300,7 @@ if __name__ == '__main__':
     else:
         print(f'当前时间: {datetime.now().strftime("%Y-%m-%d")} [星期{today+1}] {current_time_str}. `吞噬星空, 完美世界, 斗罗大陆, 斗破苍穹` 暂时都没有更新.')
 
+    get_DouPo_Link(res) #manual  run workflow for download DouPo 
     cartoon_name = res['cartoon_name']
     for resource in res['resources']:
         if resource['title']:
